@@ -38,21 +38,16 @@ return (line);
 }
 
 /**
- * execute_command - forks and executes a command with arguments
- * @line: command line string
+ * execute_command - forks and executes a command
+ * @line: command to execute
  */
 void execute_command(char *line)
 {
 pid_t pid;
-char *argv[64];
-int i = 0;
+char *argv[2];
 
-argv[i] = strtok(line, " ");
-while (argv[i] != NULL)
-{
-i++;
-argv[i] = strtok(NULL, " ");
-}
+argv[0] = line;
+argv[1] = NULL;
 
 pid = fork();
 if (pid == -1)
@@ -64,7 +59,7 @@ if (pid == 0)
 {
 if (execve(argv[0], argv, environ) == -1)
 {
-perror(argv[0]);
+perror("./shell");
 exit(1);
 }
 }
@@ -85,13 +80,10 @@ char *line;
 
 while (1)
 {
-if (isatty(STDIN_FILENO))
 print_prompt();
-
 line = read_command();
 if (line == NULL)
 break;
-
 execute_command(line);
 free(line);
 }
