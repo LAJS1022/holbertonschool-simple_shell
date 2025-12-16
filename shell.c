@@ -38,16 +38,21 @@ return (line);
 }
 
 /**
- * execute_command - forks and executes a command
- * @line: command to execute
+ * execute_command - forks and executes a command with arguments
+ * @line: command line string
  */
 void execute_command(char *line)
 {
 pid_t pid;
-char *argv[2];
+char *argv[64];
+int i = 0;
 
-argv[0] = line;
-argv[1] = NULL;
+argv[i] = strtok(line, " ");
+while (argv[i] != NULL)
+{
+i++;
+argv[i] = strtok(NULL, " ");
+}
 
 pid = fork();
 if (pid == -1)
@@ -59,7 +64,7 @@ if (pid == 0)
 {
 if (execve(argv[0], argv, environ) == -1)
 {
-perror("./shell");
+perror(argv[0]);
 exit(1);
 }
 }
