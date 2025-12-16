@@ -23,6 +23,7 @@ read = getline(&line, &len, stdin);
 if (read == -1)
 {
 free(line);
+if (isatty(STDIN_FILENO))
 printf("\n");
 return (NULL);
 }
@@ -38,7 +39,7 @@ return (line);
 }
 
 /**
- * execute_command - forks and executes a command (no PATH, no built-ins)
+ * execute_command - forks and executes a command (no PATH, no args)
  * @line: command string
  */
 void execute_command(char *line)
