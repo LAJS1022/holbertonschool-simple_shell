@@ -38,8 +38,8 @@ return (line);
 }
 
 /**
- * execute_command - forks and executes a command
- * @line: command to execute
+ * execute_command - forks and executes a command (no PATH, no built-ins)
+ * @line: command string
  */
 void execute_command(char *line)
 {
@@ -59,7 +59,7 @@ if (pid == 0)
 {
 if (execve(argv[0], argv, environ) == -1)
 {
-perror("./shell");
+perror(argv[0]);
 exit(1);
 }
 }
@@ -80,10 +80,13 @@ char *line;
 
 while (1)
 {
+if (isatty(STDIN_FILENO))
 print_prompt();
+
 line = read_command();
 if (line == NULL)
 break;
+
 execute_command(line);
 free(line);
 }
