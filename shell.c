@@ -85,10 +85,13 @@ char *line;
 
 while (1)
 {
+if (isatty(STDIN_FILENO))
 print_prompt();
+
 line = read_command();
 if (line == NULL)
 break;
+
 execute_command(line);
 free(line);
 }
