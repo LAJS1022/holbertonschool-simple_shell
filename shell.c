@@ -1,23 +1,37 @@
 #include "shell.h"
 
-/**
- * print_prompt - prints the shell prompt
- */
 void print_prompt(void)
 {
     printf("#cisfun$ ");
 }
 
-/**
- * read_command - reads a line from stdin
- *
- * Return: pointer to the line, or NULL on EOF
- */
+char *trim_spaces(char *str)
+{
+    char *end;
+
+    while (*str == ' ' || *str == '\t')
+        str++;
+
+    if (*str == '\0')
+        return str;
+
+    end = str + strlen(str) - 1;
+    while (end > str && (*end == ' ' || *end == '\t'))
+    {
+        *end = '\0';
+        end--;
+    }
+
+    return str;
+}
+
 char *read_command(void)
 {
     char *line = NULL;
     size_t len = 0;
     ssize_t read;
+    char *trimmed;
+    char *result;
 
     read = getline(&line, &len, stdin);
     if (read == -1)
@@ -29,19 +43,19 @@ char *read_command(void)
     }
 
     line[strcspn(line, "\n")] = '\0';
-    if (line[0] == '\0')
+    trimmed = trim_spaces(line);
+
+    if (trimmed[0] == '\0')
     {
         free(line);
         return (read_command());
     }
 
-    return (line);
+    result = strdup(trimmed);
+    free(line);
+    return result;
 }
 
-/**
- * execute_command - forks and executes a command (no PATH, no args)
- * @line: command string
- */
 void execute_command(char *line)
 {
     pid_t pid;
@@ -70,11 +84,6 @@ void execute_command(char *line)
     }
 }
 
-/**
- * main - entry point for the shell
- *
- * Return: Always 0
- */
 int main(void)
 {
     char *line;
