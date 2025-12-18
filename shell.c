@@ -59,10 +59,15 @@ char *read_command(void)
 void execute_command(char *line)
 {
     pid_t pid;
-    char *argv[2];
+    char *argv[64];
+    int i = 0;
 
-    argv[0] = line;
-    argv[1] = NULL;
+    argv[i] = strtok(line, " ");
+    while (argv[i] != NULL && i < 63)
+    {
+        i++;
+        argv[i] = strtok(NULL, " ");
+    }
 
     pid = fork();
     if (pid == -1)
