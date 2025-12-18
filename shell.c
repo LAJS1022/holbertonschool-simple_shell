@@ -5,7 +5,7 @@
  */
 void print_prompt(void)
 {
-printf("#cisfun$ ");
+    printf("#cisfun$ ");
 }
 
 /**
@@ -15,27 +15,27 @@ printf("#cisfun$ ");
  */
 char *read_command(void)
 {
-char *line = NULL;
-size_t len = 0;
-ssize_t read;
+    char *line = NULL;
+    size_t len = 0;
+    ssize_t read;
 
-read = getline(&line, &len, stdin);
-if (read == -1)
-{
-free(line);
-if (isatty(STDIN_FILENO))
-printf("\n");
-return (NULL);
-}
+    read = getline(&line, &len, stdin);
+    if (read == -1)
+    {
+        free(line);
+        if (isatty(STDIN_FILENO))
+            printf("\n");
+        return (NULL);
+    }
 
-line[strcspn(line, "\n")] = '\0';
-if (line[0] == '\0')
-{
-free(line);
-return (read_command());
-}
+    line[strcspn(line, "\n")] = '\0';
+    if (line[0] == '\0')
+    {
+        free(line);
+        return (read_command());
+    }
 
-return (line);
+    return (line);
 }
 
 /**
@@ -44,30 +44,30 @@ return (line);
  */
 void execute_command(char *line)
 {
-pid_t pid;
-char *argv[2];
+    pid_t pid;
+    char *argv[2];
 
-argv[0] = line;
-argv[1] = NULL;
+    argv[0] = line;
+    argv[1] = NULL;
 
-pid = fork();
-if (pid == -1)
-{
-perror("fork");
-return;
-}
-if (pid == 0)
-{
-if (execve(argv[0], argv, environ) == -1)
-{
-perror(argv[0]);
-exit(1);
-}
-}
-else
-{
-wait(NULL);
-}
+    pid = fork();
+    if (pid == -1)
+    {
+        perror("fork");
+        return;
+    }
+    if (pid == 0)
+    {
+        if (execve(argv[0], argv, environ) == -1)
+        {
+            perror(argv[0]);
+            exit(1);
+        }
+    }
+    else
+    {
+        wait(NULL);
+    }
 }
 
 /**
@@ -77,19 +77,19 @@ wait(NULL);
  */
 int main(void)
 {
-char *line;
+    char *line;
 
-while (1)
-{
-if (isatty(STDIN_FILENO))
-print_prompt();
+    while (1)
+    {
+        if (isatty(STDIN_FILENO))
+            print_prompt();
 
-line = read_command();
-if (line == NULL)
-break;
+        line = read_command();
+        if (line == NULL)
+            break;
 
-execute_command(line);
-free(line);
-}
-return (0);
+        execute_command(line);
+        free(line);
+    }
+    return (0);
 }
