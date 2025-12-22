@@ -1,5 +1,7 @@
 #include "shell.h"
 
+static const char *g_progname = "hsh";
+
 void print_prompt(void)
 {
     printf("#cisfun$ ");
@@ -39,7 +41,7 @@ char *read_command(void)
         free(line);
         if (isatty(STDIN_FILENO))
             printf("\n");
-        return (NULL);
+        return NULL;
     }
 
     line[strcspn(line, "\n")] = '\0';
@@ -48,7 +50,7 @@ char *read_command(void)
     if (trimmed[0] == '\0')
     {
         free(line);
-        return (read_command());
+        return read_command();
     }
 
     result = strdup(trimmed);
@@ -77,17 +79,13 @@ char *get_env_path(void)
 
 char *find_command(char *cmd)
 {
-    char *path_env;
-    char *path_copy;
-    char *dir;
-    char *full;
+    char *path_env, *path_copy, *dir, *full;
     struct stat st;
     size_t len_dir, len_cmd;
 
     if (cmd == NULL || *cmd == '\0')
         return NULL;
 
-    /* absolute or relative path */
     if (strchr(cmd, '/'))
     {
         if (stat(cmd, &st) == 0)
@@ -134,14 +132,27 @@ char *find_command(char *cmd)
     return NULL;
 }
 
+void print_not_found(const char *cmd)
+{
+    fprintf(stderr, "%s: 1: %s: not found\n", g_progname, cmd);
+}
+
 void execute_command(char *line)
 {
     pid_t pid;
     char *argv[64];
     int i = 0;
     char *cmd_path;
+    char *line_copy;
+    int interactive;
 
-    argv[i] = strtok(line, " ");
+    interactive = isatty(STDIN_FILENO);
+
+    line_copy = strdup(line);
+    if (line_copy == NULL)
+        return;
+
+    argv[i] = strtok(line_copy, " ");
     while (argv[i] != NULL && i < 63)
     {
         i++;
@@ -149,13 +160,19 @@ void execute_command(char *line)
     }
 
     if (argv[0] == NULL)
+    {
+        free(line_copy);
         return;
+    }
 
     cmd_path = find_command(argv[0]);
     if (cmd_path == NULL)
     {
-        fprintf(stderr, "%s: command not found\n", argv[0]);
-        return; /* no fork */
+        print_not_found(argv[0]);
+        free(line_copy);
+        if (!interactive)
+            exit(127);
+        return;
     }
 
     pid = fork();
@@ -163,6 +180,7 @@ void execute_command(char *line)
     {
         perror("fork");
         free(cmd_path);
+        free(line_copy);
         return;
     }
     if (pid == 0)
@@ -177,12 +195,17 @@ void execute_command(char *line)
     {
         wait(NULL);
     }
+
     free(cmd_path);
+    free(line_copy);
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
     char *line;
+
+    if (argv != NULL && argv[0] != NULL)
+        g_progname = argv[0];
 
     while (1)
     {
