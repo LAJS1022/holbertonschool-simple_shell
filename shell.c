@@ -2,7 +2,7 @@
 
 void print_prompt(void)
 {
-    printf("#cisfun$ ");
+    printf(":) ");
 }
 
 char *trim_spaces(char *str)
@@ -56,11 +56,51 @@ char *read_command(void)
     return result;
 }
 
+char *find_command(char *cmd)
+{
+    char *path, *dir, *full;
+    struct stat st;
+
+    if (strchr(cmd, '/'))
+    {
+        if (stat(cmd, &st) == 0)
+            return strdup(cmd);
+        return NULL;
+    }
+
+    path = getenv("PATH");
+    if (!path)
+        return NULL;
+
+    path = strdup(path);
+    dir = strtok(path, ":");
+    while (dir)
+    {
+        full = malloc(strlen(dir) + strlen(cmd) + 2);
+        if (!full)
+        {
+            free(path);
+            return NULL;
+        }
+        sprintf(full, "%s/%s", dir, cmd);
+        if (stat(full, &st) == 0)
+        {
+            free(path);
+            return full;
+        }
+        free(full);
+        dir = strtok(NULL, ":");
+    }
+    free(path);
+    return NULL;
+}
+
 void execute_command(char *line)
 {
     pid_t pid;
     char *argv[64];
     int i = 0;
+    char *cmd_path;
 
     argv[i] = strtok(line, " ");
     while (argv[i] != NULL && i < 63)
@@ -69,15 +109,23 @@ void execute_command(char *line)
         argv[i] = strtok(NULL, " ");
     }
 
+    cmd_path = find_command(argv[0]);
+    if (!cmd_path)
+    {
+        fprintf(stderr, "%s: command not found\n", argv[0]);
+        return;
+    }
+
     pid = fork();
     if (pid == -1)
     {
         perror("fork");
+        free(cmd_path);
         return;
     }
     if (pid == 0)
     {
-        if (execve(argv[0], argv, environ) == -1)
+        if (execve(cmd_path, argv, environ) == -1)
         {
             perror(argv[0]);
             exit(1);
@@ -87,6 +135,7 @@ void execute_command(char *line)
     {
         wait(NULL);
     }
+    free(cmd_path);
 }
 
 int main(void)
@@ -105,5 +154,5 @@ int main(void)
         execute_command(line);
         free(line);
     }
-    return (0);
+    return 0;
 }
