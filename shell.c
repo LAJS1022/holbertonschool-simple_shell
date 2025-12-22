@@ -204,6 +204,8 @@ int main(int argc, char **argv)
 {
     char *line;
 
+    (void)argc;
+
     if (argv != NULL && argv[0] != NULL)
         g_progname = argv[0];
 
