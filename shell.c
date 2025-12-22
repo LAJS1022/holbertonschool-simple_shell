@@ -62,7 +62,7 @@ char *get_env_path(void)
     size_t prefix_len = 5;
     char *entry;
 
-    while (environ[i] != NULL)
+    while (environ != NULL && environ[i] != NULL)
     {
         entry = environ[i];
         if (strncmp(entry, "PATH=", prefix_len) == 0)
