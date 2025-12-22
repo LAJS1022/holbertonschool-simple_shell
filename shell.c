@@ -2,7 +2,7 @@
 
 void print_prompt(void)
 {
-    printf(":) ");
+    printf("#cisfun$ ");
 }
 
 char *trim_spaces(char *str)
@@ -56,10 +56,33 @@ char *read_command(void)
     return result;
 }
 
+char *get_env_path(void)
+{
+    int i = 0;
+    size_t prefix_len = 5;
+    char *entry;
+
+    while (environ[i] != NULL)
+    {
+        entry = environ[i];
+        if (strncmp(entry, "PATH=", prefix_len) == 0)
+            return entry + prefix_len;
+        i++;
+    }
+    return NULL;
+}
+
 char *find_command(char *cmd)
 {
-    char *path, *dir, *full;
+    char *path_env;
+    char *path_copy;
+    char *dir;
+    char *full;
     struct stat st;
+    size_t len_dir, len_cmd;
+
+    if (cmd == NULL || *cmd == '\0')
+        return NULL;
 
     if (strchr(cmd, '/'))
     {
@@ -68,30 +91,42 @@ char *find_command(char *cmd)
         return NULL;
     }
 
-    path = getenv("PATH");
-    if (!path)
+    path_env = get_env_path();
+    if (path_env == NULL || *path_env == '\0')
         return NULL;
 
-    path = strdup(path);
-    dir = strtok(path, ":");
-    while (dir)
+    path_copy = strdup(path_env);
+    if (path_copy == NULL)
+        return NULL;
+
+    dir = strtok(path_copy, ":");
+    while (dir != NULL)
     {
-        full = malloc(strlen(dir) + strlen(cmd) + 2);
-        if (!full)
+        len_dir = strlen(dir);
+        len_cmd = strlen(cmd);
+        full = malloc(len_dir + 1 + len_cmd + 1);
+        if (full == NULL)
         {
-            free(path);
+            free(path_copy);
             return NULL;
         }
-        sprintf(full, "%s/%s", dir, cmd);
+
+        memcpy(full, dir, len_dir);
+        full[len_dir] = '/';
+        memcpy(full + len_dir + 1, cmd, len_cmd);
+        full[len_dir + 1 + len_cmd] = '\0';
+
         if (stat(full, &st) == 0)
         {
-            free(path);
+            free(path_copy);
             return full;
         }
+
         free(full);
         dir = strtok(NULL, ":");
     }
-    free(path);
+
+    free(path_copy);
     return NULL;
 }
 
@@ -109,8 +144,11 @@ void execute_command(char *line)
         argv[i] = strtok(NULL, " ");
     }
 
+    if (argv[0] == NULL)
+        return;
+
     cmd_path = find_command(argv[0]);
-    if (!cmd_path)
+    if (cmd_path == NULL)
     {
         fprintf(stderr, "%s: command not found\n", argv[0]);
         return;
