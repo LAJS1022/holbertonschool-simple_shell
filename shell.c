@@ -62,7 +62,10 @@ char *get_env_path(void)
     size_t prefix_len = 5;
     char *entry;
 
-    while (environ != NULL && environ[i] != NULL)
+    if (environ == NULL)
+        return NULL;
+
+    while (environ[i] != NULL)
     {
         entry = environ[i];
         if (strncmp(entry, "PATH=", prefix_len) == 0)
@@ -84,6 +87,7 @@ char *find_command(char *cmd)
     if (cmd == NULL || *cmd == '\0')
         return NULL;
 
+    /* absolute or relative path */
     if (strchr(cmd, '/'))
     {
         if (stat(cmd, &st) == 0)
@@ -151,7 +155,7 @@ void execute_command(char *line)
     if (cmd_path == NULL)
     {
         fprintf(stderr, "%s: command not found\n", argv[0]);
-        return;
+        return; /* no fork */
     }
 
     pid = fork();
