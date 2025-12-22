@@ -137,16 +137,13 @@ void print_not_found(const char *cmd)
     fprintf(stderr, "%s: 1: %s: not found\n", g_progname, cmd);
 }
 
-void execute_command(char *line)
+void execute_command(char *line, int interactive)
 {
     pid_t pid;
     char *argv[64];
     int i = 0;
     char *cmd_path;
     char *line_copy;
-    int interactive;
-
-    interactive = isatty(STDIN_FILENO);
 
     line_copy = strdup(line);
     if (line_copy == NULL)
@@ -203,22 +200,25 @@ void execute_command(char *line)
 int main(int argc, char **argv)
 {
     char *line;
+    int interactive;
 
     (void)argc;
 
     if (argv != NULL && argv[0] != NULL)
         g_progname = argv[0];
 
+    interactive = isatty(STDIN_FILENO);
+
     while (1)
     {
-        if (isatty(STDIN_FILENO))
+        if (interactive)
             print_prompt();
 
         line = read_command();
         if (line == NULL)
             break;
 
-        execute_command(line);
+        execute_command(line, interactive);
         free(line);
     }
     return 0;

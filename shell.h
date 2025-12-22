@@ -13,7 +13,7 @@ extern char **environ;
 
 void print_prompt(void);
 char *read_command(void);
-void execute_command(char *line);
+void execute_command(char *line, int interactive);
 char *trim_spaces(char *str);
 char *find_command(char *cmd);
 char *get_env_path(void);
