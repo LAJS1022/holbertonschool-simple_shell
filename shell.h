@@ -16,5 +16,6 @@ char *read_command(void);
 void execute_command(char *line);
 char *trim_spaces(char *str);
 char *find_command(char *cmd);
+char *get_env_path(void);
 
 #endif
