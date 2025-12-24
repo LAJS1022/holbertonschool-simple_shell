@@ -25,20 +25,24 @@ char *trim_spaces(char *str)
 }
 
 /**
- * read_command - reads one line from stdin safely (no getline)
+ * read_command - reads one line from stdin using read()
  * Return: newly allocated command string or NULL on EOF/error
  */
 char *read_command(void)
 {
     char buf[1024];
+    ssize_t nread;
     char *trimmed, *dup;
 
-    if (fgets(buf, sizeof(buf), stdin) == NULL)
+    nread = read(STDIN_FILENO, buf, sizeof(buf) - 1);
+    if (nread <= 0)
     {
         if (isatty(STDIN_FILENO))
             printf("\n");
         return (NULL);
     }
+
+    buf[nread] = '\0';
 
     /* remove trailing newline if present */
     buf[strcspn(buf, "\n")] = '\0';
@@ -46,7 +50,7 @@ char *read_command(void)
     trimmed = trim_spaces(buf);
     if (trimmed[0] == '\0')
     {
-      /* empty line: read next line recursively until EOF */
+        /* empty line: try again */
         return (read_command());
     }
 
