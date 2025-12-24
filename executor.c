@@ -11,7 +11,7 @@ void print_not_found(const char *cmd)
 
 /**
  * execute_command - executes a command line
- * @line: command line
+ * @line: command line (full, trimmed)
  * @interactive: 1 if interactive, 0 otherwise
  */
 void execute_command(char *line, int interactive)
@@ -24,12 +24,14 @@ void execute_command(char *line, int interactive)
     if (line_copy == NULL)
         return;
 
-    argv[i] = strtok(line_copy, " ");
+    /* split on spaces and tabs */
+    argv[i] = strtok(line_copy, " \t");
     while (argv[i] != NULL && i < 63)
     {
         i++;
-        argv[i] = strtok(NULL, " ");
+        argv[i] = strtok(NULL, " \t");
     }
+
     if (argv[0] == NULL)
     {
         free(line_copy);
@@ -39,14 +41,11 @@ void execute_command(char *line, int interactive)
     cmd_path = find_command(argv[0]);
     if (cmd_path == NULL)
     {
+        /* print only the command name, not concatenated with args */
         print_not_found(argv[0]);
-        /* liberar antes de salir */
         free(line_copy);
         if (!interactive)
-        {
-            /* no dejar nada pendiente */
             exit(127);
-        }
         return;
     }
 
