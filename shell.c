@@ -1,6 +1,6 @@
 #include "shell.h"
 
-static const char *g_progname = "hsh";
+static const char *g_progname = "./hsh";
 
 void print_prompt(void)
 {
@@ -203,9 +203,6 @@ int main(int argc, char **argv)
     int interactive;
 
     (void)argc;
-
-    if (argv != NULL && argv[0] != NULL)
-        g_progname = argv[0];
 
     interactive = isatty(STDIN_FILENO);
 
