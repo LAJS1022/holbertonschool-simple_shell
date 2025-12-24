@@ -19,4 +19,4 @@ char *find_command(char *cmd);
 char *get_env_path(void);
 void print_not_found(const char *cmd);
 
-#endif
+#endif /* SHELL_H */
