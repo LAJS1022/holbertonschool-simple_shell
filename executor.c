@@ -35,15 +35,21 @@ void execute_command(char *line, int interactive)
         free(line_copy);
         return;
     }
+
     cmd_path = find_command(argv[0]);
     if (cmd_path == NULL)
     {
         print_not_found(argv[0]);
+        /* liberar antes de salir */
         free(line_copy);
         if (!interactive)
+        {
+            /* no dejar nada pendiente */
             exit(127);
+        }
         return;
     }
+
     pid = fork();
     if (pid == -1)
     {
@@ -57,6 +63,8 @@ void execute_command(char *line, int interactive)
         if (execve(cmd_path, argv, environ) == -1)
         {
             perror(argv[0]);
+            free(cmd_path);
+            free(line_copy);
             exit(1);
         }
     }
@@ -64,6 +72,7 @@ void execute_command(char *line, int interactive)
     {
         wait(NULL);
     }
+
     free(cmd_path);
     free(line_copy);
 }
