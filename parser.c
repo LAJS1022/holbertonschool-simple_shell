@@ -1,51 +1,25 @@
 #include "shell.h"
 
-/**
- * trim_spaces - removes leading/trailing spaces and tabs in-place
- * @str: string to trim
- * Return: pointer to first non-space char (may be '\0')
- */
-char *trim_spaces(char *str)
-{
-    char *end;
-
-    while (*str == ' ' || *str == '\t')
-        str++;
-
-    if (*str == '\0')
-        return (str);
-
-    end = str + strlen(str) - 1;
-    while (end > str && (*end == ' ' || *end == '\t'))
-    {
-        *end = '\0';
-        end--;
-    }
-    return (str);
-}
-
 #define RBUF_SIZE 4096
 #define LINE_SIZE 4096
 
 /**
- * read_command - reads one logical line using read(), preserving leftovers
- * Behavior:
- * - Returns the entire trimmed line (without newline) as a newly allocated string.
- * - Preserves leftover bytes across calls (handles multiple lines per read()).
- * - Does NOT collapse internal spaces; only trims leading/trailing.
- * - If a line exceeds LINE_SIZE before newline, discards that line entirely.
- * - Uses only allowed functions (no getline/fgets/realloc).
+ * read_command - reads one logical trimmed line using read()
+ * Return: newly allocated command string or NULL on EOF/error
  */
 char *read_command(void)
 {
     static char rbuf[RBUF_SIZE];
     static ssize_t rlen = 0;
     static ssize_t rpos = 0;
+
     char line[LINE_SIZE];
     ssize_t linelen = 0;
+    ssize_t last_nons = -1;
+    int started = 0;
     int discarding = 0;
     ssize_t i, nread;
-    char *trimmed, *dup;
+    char *dup;
 
     for (;;)
     {
@@ -55,29 +29,40 @@ char *read_command(void)
 
             if (c == '\n')
             {
-                if (!discarding)
+                if (!discarding && last_nons >= 0)
                 {
-                    line[linelen] = '\0';
-                    trimmed = trim_spaces(line);
-                    if (trimmed[0] != '\0')
-                    {
-                        dup = strdup(trimmed);
-                        rpos = i + 1;
-                        return (dup);
-                    }
+                    line[last_nons + 1] = '\0';
+                    dup = strdup(line);
+                    rpos = i + 1;
+                    return (dup);
                 }
                 linelen = 0;
+                last_nons = -1;
+                started = 0;
                 discarding = 0;
                 rpos = i + 1;
                 continue;
             }
 
-            if (!discarding)
+            if (discarding)
+                continue;
+
+            if (!started)
             {
-                if (linelen < (ssize_t)(LINE_SIZE - 1))
-                    line[linelen++] = c;
-                else
-                    discarding = 1;
+                if (c == ' ' || c == '\t')
+                    continue;
+                started = 1;
+            }
+
+            if (linelen < (ssize_t)(LINE_SIZE - 1))
+            {
+                line[linelen++] = c;
+                if (c != ' ' && c != '\t')
+                    last_nons = linelen - 1;
+            }
+            else
+            {
+                discarding = 1;
             }
         }
 
@@ -87,15 +72,11 @@ char *read_command(void)
         nread = read(STDIN_FILENO, rbuf, RBUF_SIZE);
         if (nread <= 0)
         {
-            if (!discarding && linelen > 0)
+            if (!discarding && last_nons >= 0)
             {
-                line[linelen] = '\0';
-                trimmed = trim_spaces(line);
-                if (trimmed[0] != '\0')
-                {
-                    dup = strdup(trimmed);
-                    return (dup);
-                }
+                line[last_nons + 1] = '\0';
+                dup = strdup(line);
+                return (dup);
             }
             if (isatty(STDIN_FILENO))
                 printf("\n");
