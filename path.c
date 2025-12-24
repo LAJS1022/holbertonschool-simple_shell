@@ -1,4 +1,7 @@
 #include "shell.h"
+#include <sys/stat.h>
+
+extern char **environ;
 
 /**
  * find_command - resolves command path
@@ -7,8 +10,9 @@
  */
 char *find_command(const char *cmd)
 {
-    char *path, *token, *full;
+    char *path = NULL, *token, *full;
     struct stat st;
+    int i;
 
     /* If command is absolute or relative path */
     if (cmd[0] == '/' || cmd[0] == '.')
@@ -18,11 +22,15 @@ char *find_command(const char *cmd)
         return NULL;
     }
 
-    path = getenv("PATH");
-    if (!path)
-        return NULL;
-
-    path = strdup(path);
+    /* Search PATH in environ manually */
+    for (i = 0; environ[i]; i++)
+    {
+        if (strncmp(environ[i], "PATH=", 5) == 0)
+        {
+            path = strdup(environ[i] + 5);
+            break;
+        }
+    }
     if (!path)
         return NULL;
 
