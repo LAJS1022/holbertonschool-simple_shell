@@ -3,7 +3,7 @@
 /**
  * trim_spaces - removes leading/trailing spaces
  * @str: string to trim
- * Return: trimmed string
+ * Return: trimmed string (in-place)
  */
 char *trim_spaces(char *str)
 {
@@ -25,31 +25,31 @@ char *trim_spaces(char *str)
 }
 
 /**
- * read_command - reads a line from stdin
- * Return: command string or NULL
+ * read_command - reads one line from stdin safely (no getline)
+ * Return: newly allocated command string or NULL on EOF/error
  */
 char *read_command(void)
 {
-    char *line = NULL, *trimmed, *result;
-    size_t len = 0;
-    ssize_t read;
+    char buf[1024];
+    char *trimmed, *dup;
 
-    read = getline(&line, &len, stdin);
-    if (read == -1)
+    if (fgets(buf, sizeof(buf), stdin) == NULL)
     {
-        free(line);
         if (isatty(STDIN_FILENO))
             printf("\n");
         return (NULL);
     }
-    line[strcspn(line, "\n")] = '\0';
-    trimmed = trim_spaces(line);
+
+    /* remove trailing newline if present */
+    buf[strcspn(buf, "\n")] = '\0';
+
+    trimmed = trim_spaces(buf);
     if (trimmed[0] == '\0')
     {
-        free(line);
+      /* empty line: read next line recursively until EOF */
         return (read_command());
     }
-    result = strdup(trimmed);
-    free(line);
-    return (result);
+
+    dup = strdup(trimmed);
+    return (dup);
 }
