@@ -15,7 +15,7 @@ void print_prompt(void);
 char *read_command(void);
 void execute_command(char *line, int interactive);
 char *trim_spaces(char *str);
-char *find_command(char *cmd);
+char *find_command(const char *cmd);
 char *get_env_path(void);
 void print_not_found(const char *cmd);
 
