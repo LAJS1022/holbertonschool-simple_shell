@@ -25,69 +25,75 @@ char *trim_spaces(char *str)
 }
 
 #define RBUF_SIZE 4096
-#define LINE_SIZE 4096
+#define TOK_SIZE  1024
 
 /**
- * read_command - reads exactly one logical line using read() with leftovers
+ * read_command - reads one logical line using read(), robust to huge inputs
  * Behavior:
- * - Returns one trimmed non-empty line per call.
- * - Preserves leftover bytes across calls (handles multiple lines from one read).
- * - Skips empty lines after trimming.
- * - If a line exceeds LINE_SIZE before newline, discards the entire line.
- * - Uses only allowed functions: read, memcpy, strdup, etc. (no getline/fgets/realloc).
+ * - Processes input byte-by-byte with an internal buffer and preserves leftovers.
+ * - Skips any amount of leading spaces/tabs.
+ * - Extracts only the first non-space token of the line (the command),
+ *   ignoring trailing spaces or extra characters until newline.
+ * - Handles arbitrarily large lines without realloc by only buffering the token.
+ * - Returns one command per call (trimmed), or NULL on EOF/error.
+ * - Uses only allowed functions (no getline/fgets/realloc).
  */
 char *read_command(void)
 {
     static char rbuf[RBUF_SIZE];
     static ssize_t rlen = 0;  /* bytes currently in rbuf */
     static ssize_t rpos = 0;  /* current read position in rbuf */
-    char line[LINE_SIZE];
-    ssize_t linelen = 0;
-    int discarding = 0;       /* if current logical line overflowed */
-    ssize_t i, nread;
-    char *trimmed, *dup;
+
+    char token[TOK_SIZE];
+    ssize_t tlen = 0;
+    int in_token = 0;         /* 0: skipping leading spaces, 1: collecting token */
+    ssize_t nread, i;
+    char *dup;
 
     for (;;)
     {
-        /* Consume buffered bytes until newline or end */
+        /* Consume buffered bytes */
         for (i = rpos; i < rlen; i++)
         {
-            if (rbuf[i] == '\n')
+            char c = rbuf[i];
+
+            if (c == '\n')
             {
-                /* End of logical line */
-                if (!discarding)
+                /* End of logical line: if we collected a token, return it */
+                if (in_token && tlen > 0)
                 {
-                    line[linelen] = '\0';
-                    trimmed = trim_spaces(line);
-                    if (trimmed[0] != '\0')
-                    {
-                        dup = strdup(trimmed);
-                        /* Advance past newline and return one command */
-                        rpos = i + 1;
-                        return (dup);
-                    }
+                    token[tlen] = '\0';
+                    rpos = i + 1;
+                    dup = strdup(token);
+                    return (dup);
                 }
-                /* Reset for next logical line */
-                linelen = 0;
-                discarding = 0;
+                /* No token in this line: reset and look for next line */
+                in_token = 0;
+                tlen = 0;
                 rpos = i + 1;
-                /* Continue scanning for another (possibly in same buffer) */
                 continue;
             }
 
-            /* Regular byte */
-            if (!discarding)
+            /* Handle spaces/tabs */
+            if (c == ' ' || c == '\t')
             {
-                if (linelen < (ssize_t)(LINE_SIZE - 1))
+                if (in_token)
                 {
-                    line[linelen++] = rbuf[i];
+                    /* We already have the command token; ignore the rest of the line until newline */
+                    continue;
                 }
-                else
-                {
-                    /* Line exceeded capacity: discard until newline */
-                    discarding = 1;
-                }
+                /* Still skipping leading spaces */
+                continue;
             }
+
+            /* Non-space character */
+            if (!in_token)
+                in_token = 1;
+
+            /* Append to token buffer (truncate if exceeds TOK_SIZE - 1) */
+            if (tlen < (ssize_t)(TOK_SIZE - 1))
+                token[tlen++] = c;
+            /* else: ignore extra chars in token; typical commands fit in TOK_SIZE */
         }
 
         /* Buffer exhausted: reset to trigger refill */
@@ -98,16 +104,12 @@ char *read_command(void)
         nread = read(STDIN_FILENO, rbuf, RBUF_SIZE);
         if (nread <= 0)
         {
-            /* EOF or error: if partial line without newline, consider it */
-            if (!discarding && linelen > 0)
+            /* EOF or error: if we have a partial token, return it */
+            if (in_token && tlen > 0)
             {
-                line[linelen] = '\0';
-                trimmed = trim_spaces(line);
-                if (trimmed[0] != '\0')
-                {
-                    dup = strdup(trimmed);
-                    return (dup);
-                }
+                token[tlen] = '\0';
+                dup = strdup(token);
+                return (dup);
             }
             /* Nothing usable; finish */
             if (isatty(STDIN_FILENO))
@@ -115,6 +117,6 @@ char *read_command(void)
             return (NULL);
         }
         rlen = nread;
-        /* Loop to process newly read bytes, preserving leftovers */
+        /* Loop to process newly read bytes */
     }
 }
