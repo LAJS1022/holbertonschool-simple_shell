@@ -3,7 +3,7 @@
 /**
  * trim_spaces - removes leading/trailing spaces in-place
  * @str: string to trim
- * Return: pointer to the first non-space char (may be '\0')
+ * Return: pointer to first non-space char (may be '\0')
  */
 char *trim_spaces(char *str)
 {
@@ -24,108 +24,98 @@ char *trim_spaces(char *str)
     return (str);
 }
 
-/*
- * Internal buffered reader using read():
- * - Accumulates data from stdin.
- * - Returns exactly one line per call (without '\n').
- * - Preserves leftover bytes for subsequent calls.
- */
 #define RBUF_SIZE 4096
+#define LINE_SIZE 4096
 
 /**
- * read_command - reads one logical line using an internal buffer with read()
- * Return: newly allocated trimmed command string, or NULL on EOF/error
+ * read_command - reads one logical line using read(), robust to huge inputs
+ * Behavior:
+ * - Returns exactly one trimmed non-empty line per call.
+ * - Skips empty lines (after trimming) and continues reading.
+ * - If a line exceeds LINE_SIZE before newline, it is discarded entirely
+ *   (consumes until the newline) and not returned as a partial command.
+ * - Returns NULL on EOF or read error (prints newline if interactive).
  */
 char *read_command(void)
 {
     static char rbuf[RBUF_SIZE];
-    static ssize_t rlen = 0;   /* bytes currently in rbuf */
-    static ssize_t rpos = 0;   /* current read position in rbuf */
-    char line[RBUF_SIZE];
+    static ssize_t rlen = 0;  /* bytes in rbuf */
+    static ssize_t rpos = 0;  /* current position in rbuf */
+    char line[LINE_SIZE];
     ssize_t linelen = 0;
-    ssize_t i;
-    ssize_t nread;
+    ssize_t i, nread;
     char *trimmed, *dup;
+    int discarding = 0; /* if current logical line overflowed and is being discarded */
 
-    /* Keep reading until we can return one line or reach EOF */
-    while (1)
+    for (;;)
     {
         /* Consume from rbuf until newline or buffer end */
         for (i = rpos; i < rlen; i++)
         {
             if (rbuf[i] == '\n')
             {
-                /* Copy bytes [rpos, i) as a line (exclude '\n') */
-                ssize_t chunk = i - rpos;
-
-                if (chunk > 0)
+                /* End of logical line */
+                if (!discarding)
                 {
-                    if (linelen + chunk >= (ssize_t)(sizeof(line) - 1))
-                        chunk = (ssize_t)(sizeof(line) - 1 - linelen);
-                    memcpy(line + linelen, rbuf + rpos, (size_t)chunk);
-                    linelen += chunk;
+                    /* Finalize collected line */
+                    line[linelen] = '\0';
+                    trimmed = trim_spaces(line);
+                    if (trimmed[0] != '\0')
+                    {
+                        dup = strdup(trimmed);
+                        /* Advance past newline for next call */
+                        rpos = i + 1;
+                        return (dup);
+                    }
                 }
-                line[linelen] = '\0';
-
-                /* Advance past '\n' */
+                /* Reset for next logical line */
+                linelen = 0;
+                discarding = 0;
                 rpos = i + 1;
-
-                trimmed = trim_spaces(line);
-                if (trimmed[0] == '\0')
-                {
-                    /* Empty (after trim): reset line buffer and continue */
-                    linelen = 0;
-                    continue;
-                }
-
-                dup = strdup(trimmed);
-                return (dup);
+                /* Continue to find next non-empty logical line */
+                continue;
             }
-        }
 
-        /* No newline in current buffer: append remaining bytes to line */
-        if (rpos < rlen)
-        {
-            ssize_t chunk = rlen - rpos;
-
-            if (linelen + chunk >= (ssize_t)(sizeof(line) - 1))
-                chunk = (ssize_t)(sizeof(line) - 1 - linelen);
-
-            if (chunk > 0)
+            /* Regular byte */
+            if (!discarding)
             {
-                memcpy(line + linelen, rbuf + rpos, (size_t)chunk);
-                linelen += chunk;
+                if (linelen < (ssize_t)(LINE_SIZE - 1))
+                {
+                    line[linelen++] = rbuf[i];
+                }
+                else
+                {
+                    /* Line exceeded capacity: start discarding until newline */
+                    discarding = 1;
+                }
             }
-            rpos += (rlen - rpos); /* consumed all */
         }
 
-        /* If we've exhausted rbuf, refill it */
+        /* Consumed entire buffer; reset positions to trigger refill */
         rpos = 0;
         rlen = 0;
 
+        /* Refill buffer */
         nread = read(STDIN_FILENO, rbuf, RBUF_SIZE);
         if (nread <= 0)
         {
-            /* EOF or error: if we have a partial line, return it; else NULL */
-            if (linelen > 0)
+            /* EOF or error: if we have a partial line without newline */
+            if (!discarding && linelen > 0)
             {
                 line[linelen] = '\0';
                 trimmed = trim_spaces(line);
-                if (trimmed[0] == '\0')
+                if (trimmed[0] != '\0')
                 {
-                    /* Partial but empty: treat as EOF */
-                    if (isatty(STDIN_FILENO))
-                        printf("\n");
-                    return (NULL);
+                    dup = strdup(trimmed);
+                    return (dup);
                 }
-                dup = strdup(trimmed);
-                return (dup);
             }
+            /* Nothing usable; finish */
             if (isatty(STDIN_FILENO))
                 printf("\n");
             return (NULL);
         }
         rlen = nread;
-        rpos = 0;
+        /* Loop to process newly read bytes */
     }
 }
