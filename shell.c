@@ -204,6 +204,9 @@ int main(int argc, char **argv)
 
     (void)argc;
 
+    if (argv != NULL && argv[0] != NULL)
+        g_progname = argv[0];
+
     interactive = isatty(STDIN_FILENO);
 
     while (1)
