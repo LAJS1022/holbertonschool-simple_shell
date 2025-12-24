@@ -1,7 +1,5 @@
 #include "shell.h"
 
-static const char *g_progname = "./hsh";
-
 void print_prompt(void)
 {
     printf("#cisfun$ ");
@@ -134,7 +132,7 @@ char *find_command(char *cmd)
 
 void print_not_found(const char *cmd)
 {
-    fprintf(stderr, "%s: 1: %s: not found\n", g_progname, cmd);
+    fprintf(stderr, "./hsh: 1: %s: not found\n", cmd);
 }
 
 void execute_command(char *line, int interactive)
@@ -203,9 +201,7 @@ int main(int argc, char **argv)
     int interactive;
 
     (void)argc;
-
-    if (argv != NULL && argv[0] != NULL)
-        g_progname = argv[0];
+    (void)argv;
 
     interactive = isatty(STDIN_FILENO);
 
