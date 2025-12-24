@@ -25,27 +25,25 @@ char *trim_spaces(char *str)
 }
 
 #define RBUF_SIZE 4096
-#define LINE_SIZE 4096
 
 /**
- * read_command - reads one logical line using read(), robust to huge inputs
+ * read_command - reads one logical line using read() with dynamic buffering
  * Behavior:
  * - Returns exactly one trimmed non-empty line per call.
  * - Skips empty lines (after trimming) and continues reading.
- * - If a line exceeds LINE_SIZE before newline, it is discarded entirely
- *   (consumes until the newline) and not returned as a partial command.
- * - Returns NULL on EOF or read error (prints newline if interactive).
+ * - Handles arbitrarily large input lines by growing a heap buffer.
+ * - Returns NULL on EOF/error (prints newline if interactive).
  */
 char *read_command(void)
 {
     static char rbuf[RBUF_SIZE];
-    static ssize_t rlen = 0;  /* bytes in rbuf */
-    static ssize_t rpos = 0;  /* current position in rbuf */
-    char line[LINE_SIZE];
-    ssize_t linelen = 0;
+    static ssize_t rlen = 0;  /* bytes currently in rbuf */
+    static ssize_t rpos = 0;  /* current read position in rbuf */
+    char *line = NULL;
+    size_t cap = 0;
+    size_t len = 0;
     ssize_t i, nread;
     char *trimmed, *dup;
-    int discarding = 0; /* if current logical line overflowed and is being discarded */
 
     for (;;)
     {
@@ -54,68 +52,115 @@ char *read_command(void)
         {
             if (rbuf[i] == '\n')
             {
-                /* End of logical line */
-                if (!discarding)
+                /* finalize collected bytes as a line (exclude '\n') */
+                if (line == NULL)
                 {
-                    /* Finalize collected line */
-                    line[linelen] = '\0';
-                    trimmed = trim_spaces(line);
-                    if (trimmed[0] != '\0')
-                    {
-                        dup = strdup(trimmed);
-                        /* Advance past newline for next call */
-                        rpos = i + 1;
-                        return (dup);
-                    }
-                }
-                /* Reset for next logical line */
-                linelen = 0;
-                discarding = 0;
-                rpos = i + 1;
-                /* Continue to find next non-empty logical line */
-                continue;
-            }
-
-            /* Regular byte */
-            if (!discarding)
-            {
-                if (linelen < (ssize_t)(LINE_SIZE - 1))
-                {
-                    line[linelen++] = rbuf[i];
+                    /* empty line buffer to this point */
+                    line = malloc(1);
+                    if (line == NULL)
+                        return (NULL);
+                    line[0] = '\0';
+                    cap = 1;
+                    len = 0;
                 }
                 else
                 {
-                    /* Line exceeded capacity: start discarding until newline */
-                    discarding = 1;
+                    /* ensure NUL terminator */
+                    if (len == cap)
+                    {
+                        char *tmp = realloc(line, cap + 1);
+
+                        if (tmp == NULL)
+                        {
+                            free(line);
+                            return (NULL);
+                        }
+                        line = tmp;
+                        cap += 1;
+                    }
+                    line[len] = '\0';
                 }
-            }
-        }
 
-        /* Consumed entire buffer; reset positions to trigger refill */
-        rpos = 0;
-        rlen = 0;
+                /* advance past '\n' for next call */
+                rpos = i + 1;
 
-        /* Refill buffer */
-        nread = read(STDIN_FILENO, rbuf, RBUF_SIZE);
-        if (nread <= 0)
-        {
-            /* EOF or error: if we have a partial line without newline */
-            if (!discarding && linelen > 0)
-            {
-                line[linelen] = '\0';
+                /* trim and decide */
                 trimmed = trim_spaces(line);
                 if (trimmed[0] != '\0')
                 {
                     dup = strdup(trimmed);
+                    free(line);
                     return (dup);
                 }
+
+                /* reset for next logical line */
+                free(line);
+                line = NULL;
+                cap = 0;
+                len = 0;
+
+                /* continue scanning for next non-empty line */
+                continue;
             }
-            /* Nothing usable; finish */
+
+            /* regular byte: append to dynamic line buffer */
+            if (len + 1 >= cap)
+            {
+                size_t new_cap = (cap == 0) ? 128 : (cap * 2);
+                char *tmp = realloc(line, new_cap);
+
+                if (tmp == NULL)
+                {
+                    free(line);
+                    return (NULL);
+                }
+                line = tmp;
+                cap = new_cap;
+            }
+            line[len++] = rbuf[i];
+        }
+
+        /* consumed entire rbuf: reset positions to trigger refill */
+        rpos = 0;
+        rlen = 0;
+
+        /* refill buffer */
+        nread = read(STDIN_FILENO, rbuf, RBUF_SIZE);
+        if (nread <= 0)
+        {
+            /* EOF or error: if we have a partial line without newline */
+            if (line != NULL)
+            {
+                /* terminate, trim, and return if non-empty */
+                if (len == cap)
+                {
+                    char *tmp2 = realloc(line, cap + 1);
+
+                    if (tmp2 == NULL)
+                    {
+                        free(line);
+                        return (NULL);
+                    }
+                    line = tmp2;
+                    cap += 1;
+                }
+                line[len] = '\0';
+
+                trimmed = trim_spaces(line);
+                if (trimmed[0] != '\0')
+                {
+                    dup = strdup(trimmed);
+                    free(line);
+                    return (dup);
+                }
+                free(line);
+            }
+            /* nothing usable; finish */
             if (isatty(STDIN_FILENO))
                 printf("\n");
             return (NULL);
         }
         rlen = nread;
-        /* Loop to process newly read bytes */
+        /* loop to process newly read bytes */
     }
 }
