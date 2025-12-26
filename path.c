@@ -31,8 +31,14 @@ char *find_command(const char *cmd)
             break;
         }
     }
-    if (!path)
+
+    /* If PATH not set or empty string, no search */
+    if (!path || path[0] == '\0')
+    {
+        if (path)
+            free(path);
         return NULL;
+    }
 
     token = strtok(path, ":");
     while (token)
