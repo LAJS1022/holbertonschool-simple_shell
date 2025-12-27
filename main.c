@@ -1,7 +1,7 @@
 #include "shell.h"
 
 /**
- * main - simple shell con built-ins exit y env
+ * main - Simple shell 1.0 con built-ins exit y env
  * @argc: numero de argumentos
  * @argv: vector de argumentos
  *
@@ -64,7 +64,9 @@ int main(int argc, char **argv)
                 continue;
             }
 
-            if (!resolve_command(args[0]))
+            /* Verificar si el comando existe */
+            char *path = resolve_command(args[0]);
+            if (!path)
             {
                 dprintf(STDERR_FILENO, "./hsh: 1: %s: not found\n", args[0]);
                 status = 127;
@@ -72,6 +74,7 @@ int main(int argc, char **argv)
                 cmd = strtok(NULL, "\n");
                 continue;
             }
+            free(path); /* liberar la copia para evitar leaks */
 
             execute(args, &status);
             free(args);
