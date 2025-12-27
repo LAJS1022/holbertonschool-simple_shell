@@ -33,6 +33,8 @@ int main(int argc, char **argv)
         cmd = strtok(line, "\n");
         while (cmd)
         {
+            char *path = NULL;
+
             cmd = trim_spaces(cmd);
             if (*cmd == '\0')
             {
@@ -64,8 +66,7 @@ int main(int argc, char **argv)
                 continue;
             }
 
-            /* Verificar si el comando existe */
-            char *path = resolve_command(args[0]);
+            path = resolve_command(args[0]);
             if (!path)
             {
                 dprintf(STDERR_FILENO, "./hsh: 1: %s: not found\n", args[0]);
@@ -74,7 +75,7 @@ int main(int argc, char **argv)
                 cmd = strtok(NULL, "\n");
                 continue;
             }
-            free(path); /* liberar la copia para evitar leaks */
+            free(path);
 
             execute(args, &status);
             free(args);
