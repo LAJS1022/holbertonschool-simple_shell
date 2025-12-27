@@ -5,16 +5,24 @@
 
 extern char **environ;
 
+/**
+ * execute - ejecuta un comando
+ * @argv: argumentos del comando
+ */
 void execute(char **argv)
 {
-    char *resolved = find_command(argv[0]);
+    char *resolved;
+    pid_t pid;
+    int status;
+
+    resolved = find_command(argv[0]);
     if (!resolved)
     {
         fprintf(stderr, "%s: not found\n", argv[0]);
         return;
     }
 
-    pid_t pid = fork();
+    pid = fork();
     if (pid == 0)
     {
         execve(resolved, argv, environ);
@@ -23,9 +31,8 @@ void execute(char **argv)
     }
     else if (pid > 0)
     {
-        int status;
         waitpid(pid, &status, 0);
-        free(resolved); /* liberar en el padre */
+        free(resolved);
     }
     else
     {
