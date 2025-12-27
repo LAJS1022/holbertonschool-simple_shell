@@ -2,12 +2,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+/**
+ * main - punto de entrada del shell
+ * Return: siempre 0
+ */
 int main(void)
 {
-    char *line = NULL;
-    size_t len = 0;
+    char *line;
+    size_t len;
     ssize_t read;
     char **argv;
+
+    line = NULL;
+    len = 0;
 
     while (1)
     {
@@ -24,5 +31,5 @@ int main(void)
     }
 
     free(line);
-    return 0;
+    return (0);
 }
