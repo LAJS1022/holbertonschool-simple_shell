@@ -16,8 +16,6 @@ void print_env(void)
 
 /**
  * execute - ejecuta un comando con argumentos
- * @args: vector de argumentos terminado en NULL
- * @status: puntero al estado para actualizar
  */
 void execute(char **args, int *status)
 {

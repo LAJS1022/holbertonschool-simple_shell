@@ -1,11 +1,6 @@
 #include "shell.h"
 
-/**
- * _strlen - obtiene la longitud de una cadena
- * @s: cadena
- *
- * Return: longitud
- */
+/* funciones auxiliares */
 size_t _strlen(const char *s)
 {
     const char *p = s;
@@ -14,13 +9,6 @@ size_t _strlen(const char *s)
     return ((size_t)(p - s));
 }
 
-/**
- * _strcmp - compara dos cadenas
- * @s1: cadena 1
- * @s2: cadena 2
- *
- * Return: 0 si iguales, distinto si no
- */
 int _strcmp(const char *s1, const char *s2)
 {
     while (*s1 && *s2 && *s1 == *s2)
@@ -31,13 +19,6 @@ int _strcmp(const char *s1, const char *s2)
     return ((unsigned char)*s1 - (unsigned char)*s2);
 }
 
-/**
- * _strchr - busca caracter en cadena
- * @s: cadena
- * @c: caracter
- *
- * Return: puntero en s o NULL
- */
 char *_strchr(const char *s, int c)
 {
     while (*s)
@@ -51,14 +32,6 @@ char *_strchr(const char *s, int c)
     return (NULL);
 }
 
-/**
- * _memcpy - copia memoria
- * @dest: destino
- * @src: origen
- * @n: bytes
- *
- * Return: dest
- */
 void *_memcpy(void *dest, const void *src, size_t n)
 {
     size_t i;
@@ -70,13 +43,6 @@ void *_memcpy(void *dest, const void *src, size_t n)
     return (dest);
 }
 
-/**
- * _strcpy - copia cadena
- * @dest: destino
- * @src: origen
- *
- * Return: dest
- */
 char *_strcpy(char *dest, const char *src)
 {
     char *d = dest;
@@ -90,9 +56,6 @@ char *_strcpy(char *dest, const char *src)
 
 /**
  * get_env_value - obtiene el valor de una variable de entorno
- * @name: nombre de variable
- *
- * Return: puntero al valor o NULL
  */
 char *get_env_value(const char *name)
 {
@@ -111,13 +74,6 @@ char *get_env_value(const char *name)
     return (NULL);
 }
 
-/**
- * join_path - construye "dir/cmd" en nueva cadena
- * @dir: directorio
- * @cmd: comando
- *
- * Return: cadena nueva o NULL
- */
 static char *join_path(const char *dir, const char *cmd)
 {
     size_t ld, lc;
@@ -137,9 +93,6 @@ static char *join_path(const char *dir, const char *cmd)
 
 /**
  * resolve_command - resuelve comando por PATH o ruta directa
- * @cmd: nombre del comando
- *
- * Return: ruta completa nueva o NULL
  */
 char *resolve_command(const char *cmd)
 {
