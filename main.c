@@ -13,8 +13,6 @@ int main(int argc, char **argv)
     size_t n = 0;
     ssize_t read;
     char **args;
-    char *path;
-    pid_t pid;
     int status = 0;
 
     (void)argc;
@@ -66,37 +64,8 @@ int main(int argc, char **argv)
                 continue;
             }
 
-            path = resolve_command(args[0]);
-            if (!path)
-            {
-                free(args);
-                cmd = strtok(NULL, "\n");
-                continue;
-            }
-
-            pid = fork();
-            if (pid == -1)
-            {
-                status = 1;
-                free(args);
-                free(path);
-                cmd = strtok(NULL, "\n");
-                continue;
-            }
-            if (pid == 0)
-            {
-                execve(path, args, environ);
-                _exit(126);
-            }
-            if (waitpid(pid, &status, 0) == -1)
-                status = 1;
-            else if (WIFEXITED(status))
-                status = WEXITSTATUS(status);
-            else
-                status = 1;
-
+            execute(args, &status);
             free(args);
-            free(path);
 
             cmd = strtok(NULL, "\n");
         }
