@@ -27,8 +27,7 @@ char *find_command(const char *cmd)
     {
         if (strncmp(environ[i], "PATH=", 5) == 0)
         {
-            /* Si PATH está vacío, no reservar memoria */
-            if (environ[i][5] == '\0')
+            if (environ[i][5] == '\0') /* PATH vacío */
                 return NULL;
             path = strdup(environ[i] + 5);
             break;
