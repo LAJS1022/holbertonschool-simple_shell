@@ -3,20 +3,21 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
-#include <errno.h>
 
-extern char **environ;
-
-void print_prompt(void);
-char *read_command(void);
-void execute_command(char *line, int interactive);
-char *trim_spaces(char *str);
+char **parse_line(char *line);
+void execute(char **argv);
 char *find_command(const char *cmd);
-char *get_env_path(void);
-void print_not_found(const char *cmd);
+char *read_line(void);
+void free_args(char **argv);
+int builtin_exit(char **argv);
+int builtin_env(char **argv);
+size_t _strlen(const char *s);
+char *_strdup(const char *s);
+int _strcmp(const char *s1, const char *s2);
 
 #endif /* SHELL_H */

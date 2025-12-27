@@ -1,33 +1,28 @@
 #include "shell.h"
+#include <stdio.h>
+#include <stdlib.h>
 
-/**
- * main - Entry point of the shell
- * @argc: argument count
- * @argv: argument vector
- *
- * Return: 0 on success
- */
-int main(int argc, char **argv)
+int main(void)
 {
-    char *line;
-    int interactive;
-
-    (void)argc;
-    (void)argv;
-
-    interactive = isatty(STDIN_FILENO);
+    char *line = NULL;
+    size_t len = 0;
+    ssize_t read;
+    char **argv;
 
     while (1)
     {
-        if (interactive)
-            print_prompt();
-
-        line = read_command();
-        if (line == NULL)
+        printf("$ ");
+        read = getline(&line, &len, stdin);
+        if (read == -1)
             break;
 
-        execute_command(line, interactive);
-        free(line);
+        argv = parse_line(line);
+        if (argv && argv[0])
+            execute(argv);
+
+        free(argv);
     }
-    return (0);
+
+    free(line);
+    return 0;
 }
