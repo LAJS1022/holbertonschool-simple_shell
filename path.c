@@ -14,7 +14,7 @@ char *find_command(const char *cmd)
     struct stat st;
     int i;
 
-    /* If command is absolute or relative path */
+    /* Absolute or relative path */
     if (cmd[0] == '/' || cmd[0] == '.')
     {
         if (stat(cmd, &st) == 0)
@@ -22,23 +22,21 @@ char *find_command(const char *cmd)
         return NULL;
     }
 
-    /* Search PATH in environ manually */
+    /* Buscar PATH en environ */
     for (i = 0; environ[i]; i++)
     {
         if (strncmp(environ[i], "PATH=", 5) == 0)
         {
+            /* Si PATH está vacío, no reservar memoria */
+            if (environ[i][5] == '\0')
+                return NULL;
             path = strdup(environ[i] + 5);
             break;
         }
     }
 
-    /* If PATH not set or empty string, no search */
-    if (!path || path[0] == '\0')
-    {
-        if (path)
-            free(path);
+    if (!path)
         return NULL;
-    }
 
     token = strtok(path, ":");
     while (token)
