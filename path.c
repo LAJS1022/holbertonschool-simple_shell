@@ -194,4 +194,7 @@ char *resolve_command(const char *cmd)
             free(candidate);
         }
     }
-    free
+
+    free(copy);
+    return (NULL);
+}
