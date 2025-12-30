@@ -18,15 +18,20 @@ char *resolve_path(char *cmd)
     if (cmd == NULL)
         return (NULL);
 
-    if (access(cmd, X_OK) == 0)
-        return (strdup(cmd));
+    /* If command is absolute or relative path */
+    if (cmd[0] == '/' || strncmp(cmd, "./", 2) == 0 || strncmp(cmd, "../", 3) == 0)
+    {
+        if (access(cmd, X_OK) == 0)
+            return (strdup(cmd));
+        return (NULL);
+    }
 
-    /* search PATH in environ manually */
+    /* Find PATH in environ manually */
     for (i = 0; environ[i]; i++)
     {
         if (strncmp(environ[i], "PATH=", 5) == 0)
         {
-            path = environ[i] + 5; /* skip "PATH=" */
+            path = environ[i] + 5;
             break;
         }
     }
