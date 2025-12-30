@@ -18,12 +18,15 @@ void run_shell(void)
 
     while (1)
     {
-        write(STDOUT_FILENO, ":) ", 3);
+        if (isatty(STDIN_FILENO))
+            write(STDOUT_FILENO, ":) ", 3);
 
         read = getline(&line, &len, stdin);
         if (read == -1)
         {
             free(line);
+            if (isatty(STDIN_FILENO))
+                write(STDOUT_FILENO, "\n", 1);
             exit(EXIT_SUCCESS);
         }
 
