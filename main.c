@@ -1,89 +1,59 @@
 #include "shell.h"
+#include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <errno.h>
 
 /**
- * main - Simple shell 1.0 con built-ins exit y env
- * @argc: numero de argumentos
- * @argv: vector de argumentos
- *
- * Return: estado de salida
+ * run_shell - main loop of the shell
  */
-int main(int argc, char **argv)
+void run_shell(void)
 {
-    char *line = NULL, *cmd;
-    size_t n = 0;
+    char *line = NULL, *args[64], *path_cmd = NULL;
+    size_t len = 0;
     ssize_t read;
-    char **args;
-    int status = 0;
+    pid_t pid;
 
-    (void)argc;
-    (void)argv;
-
-    for (;;)
+    while (1)
     {
-        if (isatty(STDIN_FILENO))
-            write(STDOUT_FILENO, "#cisfun$ ", 9);
+        write(STDOUT_FILENO, ":) ", 3);
 
-        read = getline(&line, &n, stdin);
+        read = getline(&line, &len, stdin);
         if (read == -1)
         {
             free(line);
-            return (status);
+            exit(EXIT_SUCCESS);
         }
 
-        cmd = strtok(line, "\n");
-        while (cmd)
+        /* tokenize input */
+        tokenize(line, args);
+
+        if (args[0] == NULL)
+            continue;
+
+        /* resolve command path */
+        path_cmd = resolve_path(args[0]);
+
+        if (path_cmd != NULL && access(path_cmd, X_OK) == 0)
         {
-            char *path = NULL;
-
-            cmd = trim_spaces(cmd);
-            if (*cmd == '\0')
+            pid = fork();
+            if (pid == 0)
             {
-                cmd = strtok(NULL, "\n");
-                continue;
+                execve(path_cmd, args, environ);
+                perror("execve");
+                exit(EXIT_FAILURE);
             }
-
-            args = tokenize_line(cmd);
-            if (!args || !args[0] || args[0][0] == '\0')
-            {
-                if (args)
-                    free(args);
-                cmd = strtok(NULL, "\n");
-                continue;
-            }
-
-            if (_strcmp(args[0], "exit") == 0)
-            {
-                free(args);
-                free(line);
-                exit(status);
-            }
-
-            if (_strcmp(args[0], "env") == 0)
-            {
-                print_env();
-                free(args);
-                cmd = strtok(NULL, "\n");
-                continue;
-            }
-
-            path = resolve_command(args[0]);
-            if (!path)
-            {
-                dprintf(STDERR_FILENO, "./hsh: 1: %s: not found\n", args[0]);
-                status = 127;
-                free(args);
-                cmd = strtok(NULL, "\n");
-                continue;
-            }
-            free(path);
-
-            execute(args, &status);
-            free(args);
-
-            cmd = strtok(NULL, "\n");
+            else if (pid > 0)
+                wait(NULL);
         }
-    }
+        else
+        {
+            write(STDERR_FILENO, args[0], strlen(args[0]));
+            write(STDERR_FILENO, ": command not found\n", 21);
+        }
 
-    free(line);
-    return (status);
+        free(path_cmd);
+    }
 }

@@ -1,66 +1,21 @@
 #include "shell.h"
+#include <string.h>
 
 /**
- * trim_spaces - elimina espacios y tabs iniciales y finales
- * @str: cadena de entrada
- *
- * Return: puntero a cadena recortada
+ * tokenize - split line into arguments
+ * @line: input string
+ * @args: array to fill
  */
-char *trim_spaces(char *str)
+void tokenize(char *line, char **args)
 {
-    char *end;
+    char *token;
+    int i = 0;
 
-    while (*str == ' ' || *str == '\t')
-        str++;
-
-    if (*str == '\0')
-        return (str);
-
-    end = str + _strlen(str) - 1;
-    while (end > str && (*end == ' ' || *end == '\t'))
+    token = strtok(line, " \t\n");
+    while (token != NULL && i < 63)
     {
-        *end = '\0';
-        end--;
+        args[i++] = token;
+        token = strtok(NULL, " \t\n");
     }
-    return (str);
-}
-
-/**
- * tokenize_line - separa una linea en tokens por espacio o tab
- * @line: cadena de entrada (se modifica in place)
- *
- * Return: arreglo de tokens terminado en NULL (malloc'd)
- */
-char **tokenize_line(char *line)
-{
-    char **argv;
-    int cap = 64, argc = 0;
-    char *p = line, *start;
-
-    argv = malloc(sizeof(char *) * cap);
-    if (!argv)
-        return (NULL);
-
-    while (*p)
-    {
-        while (*p == ' ' || *p == '\t')
-            p++;
-        if (*p == '\0')
-            break;
-
-        start = p;
-        while (*p && *p != ' ' && *p != '\t')
-            p++;
-        if (*p)
-        {
-            *p = '\0';
-            p++;
-        }
-
-        argv[argc++] = start;
-        if (argc + 1 >= cap)
-            break;
-    }
-    argv[argc] = NULL;
-    return (argv);
+    args[i] = NULL;
 }

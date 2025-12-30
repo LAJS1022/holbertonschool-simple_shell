@@ -1,52 +1,29 @@
 #include "shell.h"
+#include <unistd.h>
+#include <string.h>
+#include <errno.h>
 
 /**
- * print_env - imprime las variables de entorno actuales
+ * exec_cmd - execute a command if found in PATH
+ * @cmd: full path to command
+ * @argv: argument vector
+ *
+ * Return: 0 on success, -1 on failure
  */
-void print_env(void)
+int exec_cmd(char *cmd, char **argv)
 {
-    int i;
-
-    for (i = 0; environ && environ[i]; i++)
+    if (cmd == NULL)
     {
-        write(STDOUT_FILENO, environ[i], _strlen(environ[i]));
-        write(STDOUT_FILENO, "\n", 1);
+        write(STDERR_FILENO, argv[0], strlen(argv[0]));
+        write(STDERR_FILENO, ": command not found\n", 21);
+        return (-1);
     }
-}
 
-/**
- * execute - ejecuta un comando con argumentos
- */
-void execute(char **args, int *status)
-{
-    char *path;
-    pid_t pid;
-
-    if (!args || !args[0])
-        return;
-
-    path = resolve_command(args[0]);
-    if (!path)
-        return;
-
-    pid = fork();
-    if (pid == -1)
+    if (execve(cmd, argv, environ) == -1)
     {
-        *status = 1;
-        free(path);
-        return;
+        perror(argv[0]);
+        return (-1);
     }
-    if (pid == 0)
-    {
-        execve(path, args, environ);
-        _exit(126);
-    }
-    if (waitpid(pid, status, 0) == -1)
-        *status = 1;
-    else if (WIFEXITED(*status))
-        *status = WEXITSTATUS(*status);
-    else
-        *status = 1;
 
-    free(path);
+    return (0);
 }

@@ -1,153 +1,52 @@
 #include "shell.h"
-
-/* funciones auxiliares */
-size_t _strlen(const char *s)
-{
-    const char *p = s;
-    while (*p)
-        p++;
-    return ((size_t)(p - s));
-}
-
-int _strcmp(const char *s1, const char *s2)
-{
-    while (*s1 && *s2 && *s1 == *s2)
-    {
-        s1++;
-        s2++;
-    }
-    return ((unsigned char)*s1 - (unsigned char)*s2);
-}
-
-char *_strchr(const char *s, int c)
-{
-    while (*s)
-    {
-        if (*s == (char)c)
-            return ((char *)s);
-        s++;
-    }
-    if (c == '\0')
-        return ((char *)s);
-    return (NULL);
-}
-
-void *_memcpy(void *dest, const void *src, size_t n)
-{
-    size_t i;
-    unsigned char *d = (unsigned char *)dest;
-    const unsigned char *s = (const unsigned char *)src;
-
-    for (i = 0; i < n; i++)
-        d[i] = s[i];
-    return (dest);
-}
-
-char *_strcpy(char *dest, const char *src)
-{
-    char *d = dest;
-    while (*src)
-    {
-        *d++ = *src++;
-    }
-    *d = '\0';
-    return (dest);
-}
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 /**
- * get_env_value - obtiene el valor de una variable de entorno
+ * resolve_path - find full path of command
+ * @cmd: command name
+ *
+ * Return: full path string (malloc'd) or NULL
  */
-char *get_env_value(const char *name)
+char *resolve_path(char *cmd)
 {
-    size_t nlen;
-    int i;
+    char *path, *dir, *full;
+    size_t len;
 
-    if (!name)
+    if (cmd == NULL)
         return (NULL);
-    nlen = _strlen(name);
 
-    for (i = 0; environ && environ[i]; i++)
+    if (access(cmd, X_OK) == 0)
+        return (strdup(cmd));
+
+    path = getenv("PATH");
+    if (!path || strlen(path) == 0)
+        return (NULL);
+
+    path = strdup(path);
+    dir = strtok(path, ":");
+    while (dir != NULL)
     {
-        if (!strncmp(environ[i], name, nlen) && environ[i][nlen] == '=')
-            return (environ[i] + nlen + 1);
-    }
-    return (NULL);
-}
-
-static char *join_path(const char *dir, const char *cmd)
-{
-    size_t ld, lc;
-    char *out;
-
-    ld = _strlen(dir);
-    lc = _strlen(cmd);
-    out = malloc(ld + 1 + lc + 1);
-    if (!out)
-        return (NULL);
-    _memcpy(out, dir, ld);
-    out[ld] = '/';
-    _memcpy(out + ld + 1, cmd, lc);
-    out[ld + 1 + lc] = '\0';
-    return (out);
-}
-
-/**
- * resolve_command - resuelve comando por PATH o ruta directa
- */
-char *resolve_command(const char *cmd)
-{
-    const char *path_env;
-    char *copy, *p, *start, *candidate;
-    struct stat st;
-
-    if (!cmd || *cmd == '\0')
-        return (NULL);
-
-    if (_strchr(cmd, '/'))
-    {
-        if (stat(cmd, &st) == 0 && access(cmd, X_OK) == 0)
+        len = strlen(dir) + strlen(cmd) + 2;
+        full = malloc(len);
+        if (!full)
         {
-            char *ret = malloc(_strlen(cmd) + 1);
-            if (ret)
-                _strcpy(ret, cmd);
-            return (ret);
+            free(path);
+            return (NULL);
         }
-        return (NULL);
-    }
+        strcpy(full, dir);
+        strcat(full, "/");
+        strcat(full, cmd);
 
-    path_env = get_env_value("PATH");
-    if (!path_env || *path_env == '\0')
-        return (NULL);
-
-    copy = malloc(_strlen(path_env) + 1);
-    if (!copy)
-        return (NULL);
-    _strcpy(copy, path_env);
-
-    p = copy;
-    while (*p)
-    {
-        start = p;
-        while (*p && *p != ':')
-            p++;
-        if (*p == ':')
-            *p++ = '\0';
-
-        if (*start == '\0')
-            start = ".";
-
-        candidate = join_path(start, cmd);
-        if (candidate)
+        if (access(full, X_OK) == 0)
         {
-            if (stat(candidate, &st) == 0 && access(candidate, X_OK) == 0)
-            {
-                free(copy);
-                return (candidate);
-            }
-            free(candidate);
+            free(path);
+            return (full);
         }
+        free(full);
+        dir = strtok(NULL, ":");
     }
-
-    free(copy);
+    free(path);
     return (NULL);
 }
