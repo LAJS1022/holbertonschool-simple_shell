@@ -11,8 +11,9 @@
  */
 char *resolve_path(char *cmd)
 {
-    char *path, *dir, *full;
+    char *path = NULL, *dir, *full;
     size_t len;
+    int i;
 
     if (cmd == NULL)
         return (NULL);
@@ -20,7 +21,16 @@ char *resolve_path(char *cmd)
     if (access(cmd, X_OK) == 0)
         return (strdup(cmd));
 
-    path = getenv("PATH");
+    /* search PATH in environ manually */
+    for (i = 0; environ[i]; i++)
+    {
+        if (strncmp(environ[i], "PATH=", 5) == 0)
+        {
+            path = environ[i] + 5; /* skip "PATH=" */
+            break;
+        }
+    }
+
     if (!path || strlen(path) == 0)
         return (NULL);
 
