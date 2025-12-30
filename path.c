@@ -18,7 +18,6 @@ char *resolve_path(char *cmd)
     if (cmd == NULL)
         return (NULL);
 
-    /* If command is absolute or relative path */
     if (cmd[0] == '/' || strncmp(cmd, "./", 2) == 0 || strncmp(cmd, "../", 3) == 0)
     {
         if (access(cmd, X_OK) == 0)
@@ -26,7 +25,6 @@ char *resolve_path(char *cmd)
         return (NULL);
     }
 
-    /* Find PATH in environ manually */
     for (i = 0; environ[i]; i++)
     {
         if (strncmp(environ[i], "PATH=", 5) == 0)
@@ -40,6 +38,9 @@ char *resolve_path(char *cmd)
         return (NULL);
 
     path = strdup(path);
+    if (!path)
+        return (NULL);
+
     dir = strtok(path, ":");
     while (dir != NULL)
     {
@@ -50,6 +51,7 @@ char *resolve_path(char *cmd)
             free(path);
             return (NULL);
         }
+
         strcpy(full, dir);
         strcat(full, "/");
         strcat(full, cmd);
@@ -59,9 +61,11 @@ char *resolve_path(char *cmd)
             free(path);
             return (full);
         }
+
         free(full);
         dir = strtok(NULL, ":");
     }
+
     free(path);
     return (NULL);
 }

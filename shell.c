@@ -6,18 +6,18 @@
 #include <sys/wait.h>
 #include <errno.h>
 
+/* track last exit status for main() */
+int last_status = 0;
+
 /**
  * run_shell - main loop of the shell
- *
- * Return: exit status of last executed command
  */
-int run_shell(void)
+void run_shell(void)
 {
     char *line = NULL, *args[64], *path_cmd = NULL;
     size_t len = 0;
     ssize_t read;
     pid_t pid;
-    int last_status = 0;
 
     while (1)
     {
@@ -27,10 +27,9 @@ int run_shell(void)
         read = getline(&line, &len, stdin);
         if (read == -1)
         {
-            free(line);
             if (isatty(STDIN_FILENO))
                 write(STDOUT_FILENO, "\n", 1);
-            return (last_status);
+            break;
         }
 
         tokenize(line, args);
@@ -51,9 +50,19 @@ int run_shell(void)
             }
             else if (pid > 0)
             {
-                wait(&last_status);
-                if (WIFEXITED(last_status))
-                    last_status = WEXITSTATUS(last_status);
+                int status = 0;
+
+                if (wait(&status) != -1)
+                {
+                    if (WIFEXITED(status))
+                        last_status = WEXITSTATUS(status);
+                    else
+                        last_status = 1;
+                }
+                else
+                {
+                    last_status = 1;
+                }
             }
         }
         else
@@ -66,4 +75,6 @@ int run_shell(void)
 
         free(path_cmd);
     }
+
+    free(line);
 }

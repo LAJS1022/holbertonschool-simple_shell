@@ -8,6 +8,7 @@
 #include <sys/wait.h>
 
 extern char **environ;
+extern int last_status;
 
 void run_shell(void);
 void tokenize(char *line, char **args);
