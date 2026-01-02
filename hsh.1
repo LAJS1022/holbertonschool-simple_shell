@@ -1,1 +1,75 @@
-man
+.TH hsh 1 "January 2026" "Holberton School" "User Commands"
+.SH NAME
+hsh \- simple UNIX command line interpreter
+.SH SYNOPSIS
+.B hsh
+.br
+.B echo "command" | hsh
+.SH DESCRIPTION
+The
+.B hsh
+program is a simple shell written in C. It provides a minimal environment to execute commands, handle built ins, and resolve executables using the PATH environment variable.
+
+The shell works in both interactive and non interactive modes. In interactive mode, it displays a prompt and waits for user input. In non interactive mode, it reads commands from standard input.
+
+.SH FEATURES
+Executes commands with arguments.
+.br
+Handles absolute and relative paths.
+.br
+Searches for executables in the PATH environment variable.
+.br
+Provides proper error handling. If a command is not found, it prints:
+.br
+\fB./hsh: 1: command: not found\fR
+and returns exit status 127.
+.br
+Works with empty PATH or unset PATH variables.
+
+.SH BUILTINS
+.TP
+.B exit
+Exit the shell. No arguments are handled.
+.TP
+.B env
+Print the current environment, one variable per line.
+
+.SH USAGE
+Interactive mode:
+.br
+.RS
+$ ./hsh
+:) ls
+AUTHORS  README.md  main.c  shell.c  path.c  parser.c  executor.c  shell.h
+:) env
+USER=julien
+HOME=/home/julien
+PATH=/usr/local/bin:/usr/bin:/bin
+:) exit
+.RE
+
+Non interactive mode:
+.br
+.RS
+$ echo "ls -l" | ./hsh
+.RE
+
+.SH FILES
+main.c \- entry point, calls run_shell()
+.br
+shell.c \- main loop, built ins and execution
+.br
+path.c \- resolves command paths
+.br
+parser.c \- tokenizes input
+.br
+executor.c \- manages process creation
+.br
+shell.h \- header file with prototypes and globals
+.br
+README.md \- project description
+.br
+AUTHORS \- contributors
+
+.SH AUTHOR
+Luis Jiménez (Mérida, Yucatán) \- Holberton School
