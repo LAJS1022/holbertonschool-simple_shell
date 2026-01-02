@@ -6,7 +6,6 @@
 #include <sys/wait.h>
 #include <errno.h>
 
-/* track last exit status for main() */
 int last_status = 0;
 
 /**
@@ -36,6 +35,12 @@ void run_shell(void)
 
         if (args[0] == NULL)
             continue;
+
+        if (strcmp(args[0], "exit") == 0)
+        {
+            free(line);
+            exit(last_status);
+        }
 
         path_cmd = resolve_path(args[0]);
 
