@@ -17,6 +17,7 @@ void run_shell(void)
     size_t len = 0;
     ssize_t read;
     pid_t pid;
+    int i;
 
     while (1)
     {
@@ -36,10 +37,22 @@ void run_shell(void)
         if (args[0] == NULL)
             continue;
 
+        /* Built-in exit */
         if (strcmp(args[0], "exit") == 0)
         {
             free(line);
             exit(last_status);
+        }
+
+        /* Built-in env */
+        if (strcmp(args[0], "env") == 0)
+        {
+            for (i = 0; environ[i]; i++)
+            {
+                write(STDOUT_FILENO, environ[i], strlen(environ[i]));
+                write(STDOUT_FILENO, "\n", 1);
+            }
+            continue;
         }
 
         path_cmd = resolve_path(args[0]);
